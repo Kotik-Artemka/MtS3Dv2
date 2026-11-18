@@ -6,6 +6,7 @@ ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split('
 
 ROOT_URLCONF = 'config.urls'
 ASGI_APPLICATION = 'config.asgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 INSTALLED_APPS = ['daphne', 'django.contrib.staticfiles', 'frontend']
 MIDDLEWARE = ['django.middleware.common.CommonMiddleware']
 TEMPLATES = [{
