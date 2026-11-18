@@ -4,52 +4,91 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#11101a">
-    <title>MtS 3D — агрегатор моделей</title>
+    <meta name="theme-color" content="#0d1020">
+    <title>MtS 3D — галерея моделей</title>
+    <link rel="icon" type="image/png" href="{% static 'frontend/logo.png' %}">
     <link rel="stylesheet" href="{% static 'frontend/style.css' %}">
     <script type="importmap">{"imports":{"three":"{% static 'frontend/vendor/three.module.min.js' %}"}}</script>
     <script type="module" src="{% static 'frontend/catalog.js' %}"></script>
 </head>
 <body>
-<header class="top"><div class="wrap bar">
-    <a class="brand" href="/" aria-label="MtS 3D, главная"><span class="mark" aria-hidden="true">◈</span> MtS<span class="accent">3D</span></a>
-    <a class="api" href="{% url 'api-root' %}">REST API ↗</a>
-</div></header>
-<main class="wrap" data-ws="/ws/catalog/" data-api="{% url 'stl-model-list' %}">
+<main class="gallery" data-ws="/ws/catalog/" data-api="{% url 'stl-model-list' %}">
+    <div id="world" class="world"></div>
+    <div id="exhibit-labels" class="exhibit-labels"></div>
+    <span id="crosshair" class="crosshair" aria-hidden="true" hidden></span>
+
+    <header class="top">
+        <a class="brand" href="/" aria-label="MtS 3D, главная"><img class="mark" src="{% static 'frontend/logo.png' %}" alt="" width="44" height="44"> MtS<span class="brand-accent">3D</span></a>
+        <div class="toolbar metal-panel">
+            <form id="search-form" class="search-form" role="search">
+                <span aria-hidden="true">⌕</span>
+                <input id="search" type="search" placeholder="Найти модель" aria-label="Найти модель" aria-controls="catalog-panel" autocomplete="off">
+            </form>
+            <button id="menu" class="menu hardware knob with-led" type="button" aria-expanded="false" aria-controls="catalog-panel">
+                <span class="key-face" aria-hidden="true">☰</span><span class="key-label">Каталог</span>
+            </button>
+        </div>
+        <a class="api hardware knob metal-panel" href="{% url 'api-root' %}"><span class="key-face" aria-hidden="true">›</span><span class="key-label">REST API</span></a>
+    </header>
+
     <section class="intro">
-        <h1>Агрегатор <span>3D-моделей</span></h1>
-        <p>Выберите модель, поверните её и рассмотрите детали вблизи.</p>
+        <h1>Галерея <span>3D-моделей</span></h1>
+        <p>Летайте по галерее. Нажмите на экспонат, чтобы рассмотреть его вблизи.</p>
     </section>
-    <div class="layout">
-        <section class="panel library" aria-labelledby="library-title">
-            <div class="library-header"><h2 id="library-title">Модели</h2><span class="count" id="count" hidden></span></div>
-            <div class="filters" id="filters" hidden>
-                <input id="search" type="search" placeholder="Поиск моделей" aria-label="Поиск моделей">
-                <select id="category-filter" aria-label="Категория"><option value="">Все категории</option></select>
-            </div>
-            <div id="model-list"></div>
-            <p class="notice" id="catalog-status" role="status">Загружаем каталог…</p>
-        </section>
-        <section class="panel viewer" aria-labelledby="model-name">
-            <div class="viewer-head">
-                <div><p class="category" id="category">Просмотр модели</p><h2 id="model-name">3D-просмотр</h2></div>
-                <a class="download" id="download" hidden download>↓ Скачать STL</a>
-            </div>
-            <div class="stage" id="stage">
-                <span class="format" aria-hidden="true">STL</span>
-                <p id="viewer-status" class="viewer-status" role="status">Выберите модель</p>
-                <div class="controls">
-                    <button type="button" id="spin" aria-pressed="false" disabled>↻ Автовращение</button>
-                    <button type="button" id="reset" disabled>Сбросить вид</button>
-                </div>
-            </div>
-            <div class="viewer-foot">
-                <p id="description"></p>
-                <p class="hint">Перетащите модель для вращения. Колесо мыши или щипок меняют масштаб.</p>
-            </div>
-        </section>
+
+    <section class="catalog-panel metal-panel" id="catalog-panel" aria-label="Каталог моделей" hidden>
+        <div class="catalog-heading"><h2>Экспонаты</h2><span id="count"></span></div>
+        <select id="category-filter" aria-label="Категория"><option value="">Все категории</option></select>
+        <div id="model-list"></div>
+        <p id="catalog-status" role="status">Загружаем каталог…</p>
+    </section>
+
+    <div class="world-status" id="world-status" role="status">Загружаем модели…</div>
+
+    <div class="flight-hud">
+        <div class="flight-actions metal-panel">
+            <button type="button" id="fly" class="hardware knob with-led" aria-pressed="false" hidden><span class="key-face" aria-hidden="true">⌖</span><span class="key-label" id="fly-label">Управление мышью</span></button>
+            <button type="button" id="home" class="hardware rocker" disabled><span class="key-face" aria-hidden="true">⌂</span><span class="key-label">Исходная позиция</span></button>
+        </div>
+        <div class="keyboard-guide" aria-label="Управление полётом">
+            <span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> Полёт</span>
+            <span><kbd>Пробел</kbd> <kbd>C</kbd> Высота</span>
+            <span id="mouse-guide">Потяните мышью для обзора</span>
+        </div>
+        <div class="touch-controls key-bank" aria-label="Управление полётом на сенсорном экране" hidden>
+            <button type="button" data-key="KeyA" aria-label="Влево"><span class="key-face" aria-hidden="true">←</span></button>
+            <button type="button" data-key="KeyW" aria-label="Вперёд"><span class="key-face" aria-hidden="true">↑</span></button>
+            <button type="button" data-key="KeyD" aria-label="Вправо"><span class="key-face" aria-hidden="true">→</span></button>
+            <button type="button" data-key="KeyC" aria-label="Опуститься"><span class="key-face" aria-hidden="true">−</span></button>
+            <button type="button" data-key="KeyS" aria-label="Назад"><span class="key-face" aria-hidden="true">↓</span></button>
+            <button type="button" data-key="Space" aria-label="Подняться"><span class="key-face" aria-hidden="true">＋</span></button>
+        </div>
     </div>
+
+    <dialog id="detail" aria-labelledby="model-name">
+        <div class="detail-layout">
+            <section class="inspection" aria-label="Площадка для осмотра">
+                <div id="stage" class="stage"></div>
+                <p id="viewer-status" class="viewer-status" role="status"></p>
+                <div class="inspection-controls metal-panel">
+                    <button type="button" id="spin" class="hardware pad with-led" aria-pressed="false" disabled><span class="key-face" aria-hidden="true">↻</span><span class="key-label">Автовращение</span></button>
+                    <button type="button" id="reset" class="hardware pad" disabled><span class="key-face" aria-hidden="true">⌂</span><span class="key-label">Сбросить вид</span></button>
+                </div>
+            </section>
+            <section class="details">
+                <button id="close-detail" class="hardware pad stop-key" type="button" autofocus><span class="key-face" aria-hidden="true">■</span><span class="key-label">К галерее</span></button>
+                <p class="category" id="category"></p>
+                <h2 id="model-name"></h2>
+                <p id="description"></p>
+                <dl class="specs">
+                    <div><dt>Формат</dt><dd>STL</dd></div>
+                    <div id="mesh-info" hidden><dt>Треугольники</dt><dd id="triangles"></dd></div>
+                </dl>
+                <a class="download hardware rocker" id="download" download><span class="key-face" aria-hidden="true">↓</span><span class="key-label">Скачать STL</span></a>
+                <p class="hint">Перетащите модель для вращения. Колесо мыши или щипок меняют масштаб.</p>
+            </section>
+        </div>
+    </dialog>
 </main>
-<footer class="wrap footer">MtS 3D <span>Каталог STL-моделей</span></footer>
 </body>
 </html>

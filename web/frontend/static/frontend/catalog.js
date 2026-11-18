@@ -1,141 +1,208 @@
+import { createGallery } from './gallery.js';
+import { loadGeometry } from './model.js';
 import { createViewer } from './viewer.js';
 
 const page = document.querySelector('main');
 const byId = id => document.getElementById(id);
+const panel = byId('catalog-panel');
+const menu = byId('menu');
 const list = byId('model-list');
-const viewerStatus = byId('viewer-status');
-const catalogStatus = byId('catalog-status');
-const spin = byId('spin');
-const reset = byId('reset');
-const download = byId('download');
 const search = byId('search');
 const categoryFilter = byId('category-filter');
-const icons = { 'part-15': '⬡', glider: '✈', 'cog-6-small': '⚙', 'sausage-dog': '◇' };
-
+const catalogStatus = byId('catalog-status');
+const worldStatus = byId('world-status');
+const detail = byId('detail');
+const viewerStatus = byId('viewer-status');
+const spin = byId('spin');
+const reset = byId('reset');
+const fly = byId('fly');
+const home = byId('home');
+let gallery;
 let viewer;
-let activeRequest;
-let activeButton;
-let activeModel;
+let models = [];
 let catalogRequest;
+let activeModel;
+let inspection = 0;
+let loadError = false;
+let catalogLoaded = false;
 
-async function select(model, button) {
-    activeButton?.setAttribute('aria-pressed', 'false');
-    activeButton = button;
+function showMenu(open) {
+    panel.hidden = !open;
+    menu.setAttribute('aria-expanded', String(open));
+}
+
+function matchingModels() {
+    const query = search.value.trim().toLocaleLowerCase('ru');
+    return models.filter(model =>
+        (!categoryFilter.value || categoryFilter.value === model.category)
+        && model.name.toLocaleLowerCase('ru').includes(query)
+    );
+}
+
+function renderList() {
+    const matches = matchingModels();
+    list.replaceChildren();
+    for (const model of matches) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'entry';
+        button.style.setProperty('--exhibit-color', model.color);
+        const name = document.createElement('strong');
+        const category = document.createElement('small');
+        name.textContent = model.name;
+        category.textContent = model.category;
+        button.append(name, category);
+        button.addEventListener('click', () => inspect(model.id));
+        list.append(button);
+    }
+
+    byId('count').textContent = catalogLoaded ? matches.length : '';
+    catalogStatus.hidden = matches.length > 0 && !loadError;
+    if (loadError) catalogStatus.textContent = 'Не удалось обновить каталог.';
+    else if (!catalogLoaded) catalogStatus.textContent = 'Загружаем каталог…';
+    else catalogStatus.textContent = models.length ? 'Модели не найдены.' : 'В каталоге пока нет моделей.';
+}
+
+async function inspect(id) {
+    const model = models.find(candidate => candidate.id === id);
+    if (!model) return;
     activeModel = model;
-    button.setAttribute('aria-pressed', 'true');
+    const ticket = ++inspection;
+
     byId('category').textContent = model.category;
     byId('model-name').textContent = model.name;
     byId('description').textContent = model.description;
-    download.href = model.stl_url;
-    download.hidden = false;
-
-    activeRequest?.abort();
+    byId('download').href = model.stl_url;
+    byId('mesh-info').hidden = true;
     spin.disabled = reset.disabled = true;
     spin.setAttribute('aria-pressed', 'false');
+    viewer?.clear();
+    viewer?.setSpin(false);
 
-    if (!viewer) {
-        try {
-            viewer = createViewer(byId('stage'));
-        } catch {
-            viewerStatus.textContent = 'Для 3D-просмотра нужен WebGL 2. Файл можно скачать по ссылке выше.';
-            return;
-        }
+    if (!detail.open) {
+        gallery?.setActive(false);
+        detail.showModal();
     }
-
-    viewer.clear();
-    viewer.setSpin(false);
     viewerStatus.textContent = 'Загружаем STL…';
-    const request = new AbortController();
-    activeRequest = request;
 
     try {
-        const response = await fetch(model.stl_url, { signal: request.signal });
-        if (!response.ok) throw new Error('Ошибка загрузки STL');
-        const buffer = await response.arrayBuffer();
-        if (request.signal.aborted) return;
-        viewer.show(buffer, model.color);
+        viewer ??= createViewer(byId('stage'));
+    } catch {
+        viewerStatus.textContent = 'Для 3D-просмотра нужен WebGL 2. STL можно скачать.';
+        return;
+    }
+
+    viewer.setActive(true);
+    try {
+        const geometry = await loadGeometry(model.stl_url);
+        if (ticket !== inspection || !detail.open) return;
+        viewer.show(geometry, model.color);
+        byId('triangles').textContent = (geometry.attributes.position.count / 3).toLocaleString('ru');
+        byId('mesh-info').hidden = false;
         viewerStatus.textContent = '';
         spin.disabled = reset.disabled = false;
     } catch {
-        if (!request.signal.aborted) {
-            viewerStatus.textContent = 'Не удалось открыть модель. Выберите её ещё раз, чтобы повторить загрузку.';
-        }
+        if (ticket === inspection && detail.open) viewerStatus.textContent = 'Не удалось открыть STL.';
     }
 }
 
+function lockChanged(locked) {
+    if (locked) showMenu(false);
+    byId('crosshair').hidden = !locked;
+    fly.setAttribute('aria-pressed', String(locked));
+    byId('fly-label').textContent = locked ? 'Освободить курсор' : 'Управление мышью';
+    byId('mouse-guide').textContent = locked ? 'Мышь — обзор, клик — выбор, Esc — курсор' : 'Потяните мышью для обзора';
+}
+
+try {
+    gallery = createGallery(byId('world'), byId('exhibit-labels'), inspect, lockChanged);
+    fly.hidden = !byId('world').querySelector('canvas').requestPointerLock;
+    home.disabled = false;
+    document.querySelector('.touch-controls').hidden = false;
+} catch {
+    worldStatus.textContent = 'Для полёта нужен WebGL 2. Модели доступны в каталоге.';
+    showMenu(true);
+}
+
+fly.addEventListener('click', async () => {
+    try {
+        await gallery.flight.lock();
+    } catch {
+        byId('mouse-guide').textContent = 'Потяните мышью по сцене для обзора';
+    }
+});
+
+home.addEventListener('click', () => {
+    gallery.flight.reset();
+    byId('world').querySelector('canvas').focus();
+});
+
+for (const button of document.querySelectorAll('[data-key]')) {
+    button.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        button.setPointerCapture(event.pointerId);
+        gallery?.flight.setPressed(button.dataset.key, true);
+    });
+    button.addEventListener('lostpointercapture', () => gallery?.flight.setPressed(button.dataset.key, false));
+}
+
+byId('close-detail').addEventListener('click', () => detail.close());
+detail.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        detail.close();
+    }
+});
+detail.addEventListener('close', () => {
+    inspection++;
+    activeModel = undefined;
+    viewer?.setSpin(false);
+    viewer?.setActive(false);
+    gallery?.setActive(true);
+});
 spin.addEventListener('click', () => {
     const enabled = spin.getAttribute('aria-pressed') !== 'true';
     spin.setAttribute('aria-pressed', String(enabled));
     viewer.setSpin(enabled);
 });
-
 reset.addEventListener('click', () => {
     viewer.setSpin(false);
     spin.setAttribute('aria-pressed', 'false');
     viewer.reset();
 });
 
-function addModel(model) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'entry';
-    button.setAttribute('aria-pressed', 'false');
-
-    const icon = document.createElement('span');
-    icon.className = 'entry-icon';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.style.setProperty('--model-color', model.color);
-    icon.textContent = icons[model.id] || '◇';
-
-    const label = document.createElement('span');
-    const name = document.createElement('strong');
-    const category = document.createElement('small');
-    name.textContent = model.name;
-    category.textContent = model.category;
-    label.append(name, category);
-    button.append(icon, label);
-    button.addEventListener('click', () => select(model, button));
-    list.append(button);
-    return button;
-}
-
-let models = [];
-let buttons = [];
-
-function filterModels() {
-    const query = search.value.trim().toLocaleLowerCase('ru');
-    let visible = 0;
-    models.forEach((model, index) => {
-        const nameMatches = model.name.toLocaleLowerCase('ru').includes(query);
-        const categoryMatches = !categoryFilter.value || categoryFilter.value === model.category;
-        buttons[index].hidden = !(nameMatches && categoryMatches);
-        if (!buttons[index].hidden) visible++;
-    });
-    byId('count').textContent = visible;
-    catalogStatus.hidden = visible > 0;
-    catalogStatus.textContent = models.length ? 'Модели не найдены.' : 'В каталоге пока нет моделей.';
-}
-
-search.addEventListener('input', filterModels);
-categoryFilter.addEventListener('change', filterModels);
+menu.addEventListener('click', () => showMenu(panel.hidden));
+search.addEventListener('focus', () => showMenu(true));
+search.addEventListener('input', () => {
+    showMenu(true);
+    renderList();
+});
+categoryFilter.addEventListener('change', renderList);
+byId('search-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const match = matchingModels()[0];
+    if (match) inspect(match.id);
+});
+window.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !event.defaultPrevented && !detail.open && !panel.hidden) {
+        showMenu(false);
+        if (panel.contains(document.activeElement) || document.activeElement === search) menu.focus();
+    }
+});
 
 async function loadCatalog() {
     catalogRequest?.abort();
     const request = new AbortController();
     catalogRequest = request;
-
     try {
-        const response = await fetch(page.dataset.api, {
-            headers: { Accept: 'application/json' },
-            signal: request.signal,
-        });
-        if (!response.ok) throw new Error('Ошибка API');
-        const updatedModels = await response.json();
+        const response = await fetch(page.dataset.api, { signal: request.signal });
+        if (!response.ok) throw new Error('Ошибка каталога');
+        const updated = await response.json();
         if (request.signal.aborted) return;
-        models = updatedModels;
+        catalogLoaded = true;
+        loadError = false;
+        models = updated;
 
-        list.replaceChildren();
-        buttons = models.map(addModel);
         const selectedCategory = categoryFilter.value;
         categoryFilter.replaceChildren(new Option('Все категории', ''));
         for (const category of new Set(models.map(model => model.category))) {
@@ -143,34 +210,25 @@ async function loadCatalog() {
         }
         categoryFilter.value = selectedCategory;
         if (categoryFilter.selectedIndex === -1) categoryFilter.value = '';
+        renderList();
 
-        byId('filters').hidden = !models.length;
-        byId('count').hidden = false;
-        filterModels();
+        if (detail.open && activeModel) {
+            const revised = models.find(model => model.id === activeModel.id);
+            if (!revised) detail.close();
+            else if (JSON.stringify(revised) !== JSON.stringify(activeModel)) inspect(revised.id);
+        }
 
-        const index = models.findIndex(model => model.id === activeModel?.id);
-        if (index !== -1 && JSON.stringify(models[index]) === JSON.stringify(activeModel)) {
-            activeButton = buttons[index];
-            activeButton.setAttribute('aria-pressed', 'true');
-        } else if (models.length) {
-            await select(models[Math.max(index, 0)], buttons[Math.max(index, 0)]);
-        } else {
-            activeRequest?.abort();
-            activeModel = activeButton = undefined;
-            viewer?.clear();
-            viewer?.setSpin(false);
-            spin.disabled = reset.disabled = true;
-            spin.setAttribute('aria-pressed', 'false');
-            download.hidden = true;
-            byId('category').textContent = 'Просмотр модели';
-            byId('model-name').textContent = '3D-просмотр';
-            byId('description').textContent = '';
-            viewerStatus.textContent = 'Выберите модель';
+        if (gallery) {
+            const results = await gallery.setModels(models);
+            if (request.signal.aborted) return;
+            worldStatus.textContent = results.some(result => result.status === 'rejected')
+                ? 'Не удалось загрузить часть STL.' : '';
         }
     } catch {
         if (request.signal.aborted) return;
-        catalogStatus.hidden = false;
-        catalogStatus.textContent = 'Не удалось загрузить каталог. Обновите страницу, чтобы повторить попытку.';
+        loadError = true;
+        renderList();
+        worldStatus.textContent = 'Не удалось загрузить каталог.';
     }
 }
 
