@@ -15,7 +15,7 @@
     <a class="brand" href="/" aria-label="MtS 3D, главная"><span class="mark" aria-hidden="true">◈</span> MtS<span class="accent">3D</span></a>
     <a class="api" href="{% url 'api-root' %}">REST API ↗</a>
 </div></header>
-<main class="wrap" data-api="{% url 'stl-model-list' %}">
+<main class="wrap" data-ws="/ws/catalog/" data-api="{% url 'stl-model-list' %}">
     <section class="intro">
         <h1>Агрегатор <span>3D-моделей</span></h1>
         <p>Выберите модель, поверните её и рассмотрите детали вблизи.</p>

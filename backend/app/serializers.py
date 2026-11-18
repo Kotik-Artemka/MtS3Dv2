@@ -1,4 +1,4 @@
-from django.templatetags.static import static
+from django.urls import reverse
 from rest_framework import serializers
 
 
@@ -11,4 +11,4 @@ class STLModelSerializer(serializers.Serializer):
     stl_url = serializers.SerializerMethodField()
 
     def get_stl_url(self, model):
-        return static(f"frontend/models/{model['file']}")
+        return reverse('stl-file', kwargs={'name': model['file'].removesuffix('.stl')})
