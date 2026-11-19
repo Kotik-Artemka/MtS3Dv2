@@ -1,10 +1,19 @@
 import asyncio
 import hashlib
+import json
 from contextlib import suppress
 
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
-from .catalog import CATALOG_PATH
+from .models import STLModel
+from .serializers import STLModelSerializer
+
+
+@database_sync_to_async
+def catalog_revision():
+    data = STLModelSerializer(STLModel.objects.all(), many=True).data
+    return hashlib.sha256(json.dumps(data).encode()).hexdigest()
 
 
 class CatalogConsumer(AsyncJsonWebsocketConsumer):
@@ -20,13 +29,7 @@ class CatalogConsumer(AsyncJsonWebsocketConsumer):
     async def watch_catalog(self):
         previous = None
         while True:
-            try:
-                contents = await asyncio.to_thread(CATALOG_PATH.read_bytes)
-            except OSError:
-                await self.close(code=1011)
-                return
-
-            revision = hashlib.sha256(contents).hexdigest()
+            revision = await catalog_revision()
             if revision != previous:
                 await self.send_json({'type': 'catalog.changed', 'revision': revision})
                 previous = revision

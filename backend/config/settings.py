@@ -21,6 +21,13 @@ REST_FRAMEWORK = {
     'UNAUTHENTICATED_USER': None,
 }
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    },
+}
+
 LANGUAGE_CODE = 'ru'
 STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
