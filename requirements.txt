@@ -1,2 +1,5 @@
--r backend/requirements.txt
--r web/requirements.txt
+Django==5.2.19
+djangorestframework==3.17.2
+channels==4.3.2
+daphne==4.2.1
+websockets==15.0.1

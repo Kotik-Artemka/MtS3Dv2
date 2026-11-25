@@ -1,0 +1,28 @@
+
+/* Accounts share the site's palette and are controlled by backend permissions. */
+#account-dialog { width: min(450px, calc(100% - 28px)); padding: 28px; }
+.account-heading { display:flex; align-items:start; justify-content:space-between; gap:16px; margin-bottom:22px; }
+.account-heading h2 { font-size:28px; line-height:1.2; }
+.account-eyebrow { font:600 11px/1.5 system-ui,sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 5px; }
+#account-close { border:0; background:transparent; color:inherit; font-size:28px; line-height:30px; cursor:pointer; }
+.account-tabs { display:flex; gap:8px; margin-bottom:18px; }
+.account-tabs button { flex:1; border:1px solid var(--line); border-radius:12px; background:transparent; color:inherit; padding:10px; font:inherit; }
+.account-tabs [aria-pressed=true] { background:var(--accent, #8f6a2b); color:white; border-color:transparent; }
+#account-form label { display:block; font-size:14px; margin:12px 0; }
+#account-form input { display:block; width:100%; padding:11px 12px; margin-top:6px; background:var(--surface,#fff); border:1px solid var(--line); border-radius:10px; color:inherit; font:inherit; }
+#account-form label span, #account-password-hint, #account-role-label { color:var(--muted); font-size:13px; }
+.account-submit { display:block; width:100%; margin-top:20px; padding:12px 18px; background:var(--accent,#8f6a2b); color:#fff; border:0; border-radius:12px; font:600 14px/1.5 system-ui,sans-serif; cursor:pointer; }
+#account-error { color:#a03855; font-size:14px; margin-top:14px; overflow-wrap:anywhere; }
+#account-error:empty { display:none; }
+.account-admin-links { display:flex; gap:12px; flex-wrap:wrap; margin-top:20px; font-size:14px; }
+.account-admin-links a { text-decoration:underline; }
+.account-toggle { max-width:145px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.account-actions { justify-self:end; display:flex; gap:12px; align-items:center; }
+.account-actions .api { flex:none; }
+@media(max-width:760px) { .account-actions .api { display:none; } .account-toggle { max-width:115px; } #account-dialog { padding:22px; } }
+
+.account-submit, .account-tabs button { background:var(--surface); color:var(--text); border:1px solid #ffffff80; box-shadow:var(--raised); }
+.account-tabs [aria-pressed=true], .account-submit:active { background:var(--surface); color:var(--aqua); box-shadow:var(--inset); }
+#account-form input { box-shadow:var(--inset); border-color:#ffffff70; }
+.toolbar:has(#add-model[hidden]) { grid-template-columns:minmax(180px,1fr) auto; }
+@media(max-width:760px) { .toolbar:has(#add-model[hidden]) { grid-template-columns:minmax(150px,1fr) auto; } }

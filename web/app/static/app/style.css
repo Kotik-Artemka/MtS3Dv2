@@ -1,0 +1,1097 @@
+/* Светлая галерея и неоморфные элементы управления. */
+:root {
+    font: 15px / 1.5 system-ui, sans-serif;
+    color: var(--text);
+    color-scheme: light;
+    --violet: #ac8240;
+    background: rgb(243, 241, 238);
+    --surface: #eceef0;
+    --text: #343b46;
+    --muted: #68717e;
+    --panel: #eceef0;
+    --line: #d6dade;
+    --aqua: #97733b;
+    --raised: 5px 5px 12px #bfc5cc99, -5px -5px 12px #ffffff;
+    --inset: inset 3px 3px 7px #bfc5cc99, inset -3px -3px 7px #ffffff;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body, h1, h2, p, dl, dd {
+    margin: 0px;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button, input, select {
+    color: inherit;
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+button, select {
+    padding: 0px;
+}
+
+.gallery {
+    position: relative;
+    isolation: isolate;
+    min-height: 570px;
+    height: 100svh;
+    overflow: hidden;
+}
+
+.world, .exhibit-labels {
+    position: absolute;
+    inset: 0px;
+}
+
+.world canvas, .stage canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: grab;
+}
+
+.world canvas:active, .stage canvas:active {
+    cursor: grabbing;
+}
+
+.world canvas:focus-visible {
+    outline-offset: -3px;
+}
+
+.exhibit-labels {
+    pointer-events: none;
+}
+
+.exhibit {
+    pointer-events: auto;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    white-space: nowrap;
+    font-weight: 650;
+}
+
+.exhibit::before, .entry::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--exhibit-color, var(--aqua));
+    box-shadow: 0 0 10px var(--exhibit-color, var(--aqua));
+    vertical-align: 0.1em;
+}
+
+.exhibit::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    width: 1px;
+    height: 10px;
+}
+
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.top {
+    position: absolute;
+    z-index: 3;
+    top: 20px;
+    left: 28px;
+    right: 28px;
+    display: grid;
+    grid-template-columns: 1fr minmax(280px, 600px) 1fr;
+    align-items: center;
+    gap: 18px;
+}
+
+.brand {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+}
+
+.mark {
+    display: block;
+    width: 44px;
+    height: 44px;
+    margin-right: 8px;
+}
+
+.api {
+    justify-self: end;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex: 1 1 0%;
+    padding-left: 10px;
+}
+
+.search-form > span {
+    color: var(--aqua);
+    font-size: 21px;
+}
+
+.search-form input {
+    min-width: 0px;
+    padding: 7px 0px;
+    background: transparent;
+    border: 0px;
+}
+
+.menu {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.intro {
+    position: absolute;
+    left: clamp(24px, 5.2vw, 82px);
+    top: 16%;
+    max-width: 360px;
+    pointer-events: none;
+}
+
+.intro h1 {
+    font-size: clamp(32px, 4vw, 56px);
+    line-height: 0.99;
+    letter-spacing: -0.066em;
+}
+
+.intro h1 span {
+    display: block;
+    color: var(--violet);
+    white-space: nowrap;
+}
+
+.intro p {
+    max-width: 255px;
+    margin-top: 14px;
+    font-size: 14px;
+}
+
+.catalog-panel {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    width: min(490px, 100% - 36px);
+    max-height: min(480px, 65%);
+    overflow: auto;
+    transform: translateX(-50%);
+    border-radius: 14px;
+}
+
+.catalog-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.catalog-heading h2 {
+    font-size: 18px;
+}
+
+#category-filter {
+    width: 100%;
+}
+
+#model-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.entry {
+    overflow-wrap: anywhere;
+}
+
+.entry small {
+    display: block;
+}
+
+#catalog-status {
+    color: rgb(51, 54, 55);
+}
+
+.world-status {
+    position: absolute;
+    left: 50%;
+    top: 48%;
+    z-index: 1;
+    transform: translateX(-50%);
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.world-status:empty, .viewer-status:empty {
+    display: none;
+}
+
+.flight-hud {
+    position: absolute;
+    inset: auto 25px 22px;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.flight-actions, .keyboard-guide {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.flight-actions {
+    pointer-events: auto;
+}
+
+.flight-actions button, .keyboard-guide {
+    font-size: 12px;
+}
+
+kbd {
+    display: inline-block;
+    text-align: center;
+    font-size: 11px;
+}
+
+.touch-controls {
+    display: none;
+}
+
+dialog {
+    width: min(1040px, 100% - 38px);
+    max-height: calc(100% - 32px);
+    padding: 0px;
+    color: var(--text);
+}
+
+dialog::backdrop {
+    backdrop-filter: blur(8px);
+}
+
+.detail-layout {
+    display: grid;
+    grid-template-columns: minmax(0px, 1.8fr) minmax(255px, 1fr);
+}
+
+.inspection {
+    position: relative;
+    border-right: 1px solid var(--line);
+}
+
+.stage {
+    height: clamp(350px, 64vh, 610px);
+}
+
+.inspection-controls {
+    display: flex;
+    position: absolute;
+    bottom: 13px;
+    left: 13px;
+    gap: 6px;
+}
+
+.inspection-controls button {
+    font-size: 12px;
+}
+
+.viewer-status {
+    position: absolute;
+    inset: 46% 15px auto;
+    text-align: center;
+    pointer-events: none;
+}
+
+.details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: clamp(17px, 3vw, 36px);
+}
+
+#close-detail {
+    margin-bottom: 28px;
+    font-size: 13px;
+}
+
+.category {
+    font-size: 13px;
+}
+
+.details h2 {
+    margin: 3px 0px 13px;
+    font-size: clamp(28px, 4vw, 43px);
+    line-height: 1.04;
+    letter-spacing: -0.05em;
+}
+
+#description, .hint {
+    color: var(--muted);
+}
+
+.specs {
+    width: 100%;
+    margin: 20px 0px;
+    padding-block: 9px;
+    border-block: 1px solid var(--line);
+}
+
+.specs div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 3px 0px;
+}
+
+.specs dt {
+    color: var(--muted);
+}
+
+.hint {
+    margin-top: 12px;
+    font-size: 12px;
+}
+
+@media (pointer: coarse) {
+    .touch-controls {
+        display: grid;
+        grid-template-columns: repeat(3, 39px);
+        grid-template-rows: repeat(2, 39px);
+        gap: 4px;
+        pointer-events: auto;
+    }
+
+    .touch-controls button {
+        padding: 0px;
+        touch-action: none;
+    }
+
+    .keyboard-guide, #fly {
+        display: none;
+    }
+
+}
+
+@media (max-width: 760px) {
+    .top {
+        inset: 12px 13px auto;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+    }
+
+    .api {
+        display: none;
+    }
+
+    .brand {
+        font-size: 16px;
+    }
+
+    .mark {
+        width: 29px;
+        height: 29px;
+        margin-right: 4px;
+    }
+
+    .search-form {
+        gap: 4px;
+        padding-left: 5px;
+    }
+
+    .search-form input {
+        font-size: 14px;
+    }
+
+    .catalog-panel {
+        top: 65px;
+    }
+
+    .intro {
+        top: 83px;
+        left: 17px;
+    }
+
+    .intro h1 {
+        font-size: 32px;
+    }
+
+    .intro h1 span {
+        display: inline;
+    }
+
+    .intro p {
+        margin-top: 5px;
+        font-size: 12px;
+    }
+
+    .exhibit {
+        font-size: 11px;
+        padding-inline: 7px;
+    }
+
+    .flight-hud {
+        inset: auto 12px 12px;
+        align-items: end;
+    }
+
+    .flight-actions {
+        align-items: flex-start;
+    }
+
+    .keyboard-guide {
+        display: none;
+    }
+
+    .detail-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .details {
+        grid-row: 1;
+    }
+
+    #close-detail {
+        margin-bottom: 12px;
+    }
+
+    .specs {
+        margin: 10px 0px;
+    }
+
+    .stage {
+        height: 290px;
+    }
+
+    .inspection {
+        border-right: 0px;
+        border-bottom: 0px;
+        border-left: 0px;
+        border-image: initial;
+        border-top: 1px solid var(--line);
+    }
+
+}
+
+.upload-toggle {
+    gap: 5px;
+}
+
+.upload-toggle .key-face {
+    width: 34px;
+    height: 34px;
+}
+
+#catalog-notice {
+    color: rgb(22, 72, 57);
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+#catalog-notice:empty {
+    display: none;
+}
+
+#upload-dialog {
+    width: min(560px, 100% - 28px);
+}
+
+#upload-form {
+    padding: clamp(20px, 4vw, 32px);
+}
+
+.upload-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.upload-heading h2 {
+    font-size: 29px;
+    letter-spacing: -0.04em;
+    margin-top: 3px;
+}
+
+.upload-close {
+    border: 1px solid var(--line);
+}
+
+#upload-form label {
+    display: block;
+    font-size: 13px;
+    margin: 14px 0px 6px;
+    color: var(--muted);
+}
+
+#upload-form input:not([type="hidden"]), #upload-form textarea {
+    display: block;
+    width: 100%;
+    border: 1px solid rgb(80, 87, 121);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 12px;
+    font: inherit;
+}
+
+#upload-form textarea {
+    resize: vertical;
+    min-height: 85px;
+    max-height: 240px;
+}
+
+#upload-form .file-picker {
+    padding: 16px;
+    margin: 0px 0px 18px;
+}
+
+.file-picker span {
+    display: block;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.file-picker .file-picker-title {
+    font-size: 16px;
+    font-weight: 650;
+    color: var(--text);
+    margin-bottom: 5px;
+}
+
+#upload-form input[type="file"] {
+    padding: 12px 0px 0px;
+    font-size: 12px;
+}
+
+#upload-file-info {
+    overflow-wrap: anywhere;
+    margin-top: 6px;
+}
+
+.upload-row {
+    display: grid;
+    grid-template-columns: 1fr 90px;
+    gap: 14px;
+}
+
+#upload-form input[type="color"] {
+    padding: 5px;
+    height: 44px;
+}
+
+#upload-status {
+    margin: 14px 0px;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+#upload-status:empty {
+    display: none;
+}
+
+#upload-submit {
+    width: 100%;
+    border-radius: 9px;
+    margin-top: 12px;
+    font-weight: 700;
+}
+
+#upload-form[aria-busy="true"] {
+    cursor: progress;
+}
+
+@media (max-width: 1000px) {
+    .upload-toggle .key-label {
+        display: none;
+    }
+
+}
+
+.gallery {
+    background: rgb(243, 241, 238);
+}
+
+.mark {
+    filter: brightness(0.5);
+}
+
+.brand-accent {
+    color: rgb(161, 122, 54);
+}
+
+.intro h1 {
+    font-weight: 750;
+}
+
+.intro p {
+    color: rgb(122, 115, 103);
+}
+
+.world-status {
+    background: rgba(255, 253, 245, 0.91);
+    box-shadow: rgba(113, 102, 77, 0.082) 0px 8px 28px;
+}
+
+kbd {
+    border-color: rgb(200, 192, 176);
+}
+
+dialog {
+    border-color: rgb(217, 208, 190);
+    box-shadow: rgba(85, 75, 57, 0.22) 0px 24px 90px;
+}
+
+dialog::backdrop {
+    background: rgba(139, 130, 112, 0.18);
+}
+
+.stage {
+    background: rgb(243, 241, 238);
+}
+
+.category {
+    color: rgb(153, 117, 54);
+}
+
+.exhibit {
+    background: rgb(255, 254, 248);
+    border-color: rgb(214, 201, 175);
+}
+
+.exhibit:hover {
+    background: rgb(243, 233, 211);
+}
+
+.exhibit::after {
+    background: rgb(197, 185, 159);
+}
+
+.exhibit::before {
+    box-shadow: none;
+}
+
+.crosshair {
+    filter: none;
+    opacity: 0.7;
+    background: linear-gradient(rgb(83, 72, 45), rgb(83, 72, 45)) center center / 1px 100% no-repeat, linear-gradient(rgb(83, 72, 45), rgb(83, 72, 45)) center center / 100% 1px no-repeat;
+}
+
+.upload-close {
+    background: rgb(240, 236, 226);
+}
+
+#upload-form input:not([type="hidden"]), #upload-form textarea {
+    background: rgb(255, 254, 250);
+    border-color: rgb(207, 198, 180);
+}
+
+#upload-form .file-picker {
+    border-color: rgb(189, 169, 130);
+}
+
+#upload-form input[type="file"] {
+    background: transparent;
+}
+
+#upload-file-info {
+    color: rgb(132, 100, 41);
+}
+
+#upload-status {
+    color: rgb(158, 75, 36);
+}
+
+#upload-submit {
+    border-color: rgb(193, 160, 87);
+}
+
+.metal-panel, .key-bank {
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.44);
+    border-radius: 24px;
+    box-shadow: var(--raised);
+}
+
+.toolbar {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) auto auto;
+    padding: 10px;
+    gap: 12px;
+    align-items: center;
+}
+
+.search-form {
+    background: var(--surface);
+    border: 0px;
+    border-radius: 24px;
+    box-shadow: var(--inset);
+    padding: 0px 14px;
+    min-width: 0px;
+    height: 44px;
+}
+
+.search-form > span {
+    flex: 0 0 auto;
+}
+
+.search-form input {
+    flex: 1 1 0%;
+    width: 0px;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.search-form input::placeholder {
+    color: var(--muted);
+}
+
+.hardware, .touch-controls button, .entry, .exhibit, .upload-close, #upload-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 24px;
+    color: var(--text);
+    background: var(--surface);
+    box-shadow: var(--raised);
+    font-size: 13px;
+    font-weight: 600;
+    text-shadow: none;
+    transition: box-shadow 0.18s, color 0.18s, background 0.18s;
+}
+
+.hardware:hover, .entry:hover, .exhibit:hover, .upload-close:hover, #upload-submit:hover {
+    background: rgb(242, 243, 245);
+    color: rgb(136, 96, 43);
+}
+
+.hardware:active, .hardware:is([aria-pressed="true"], [aria-expanded="true"]), .touch-controls button:active, .entry:active, .exhibit:active, .upload-close:active, #upload-submit:active {
+    box-shadow: var(--inset);
+    background: var(--surface);
+    color: rgb(136, 96, 43);
+}
+
+.key-face {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    font-size: 19px;
+    line-height: 1;
+}
+
+.key-label {
+    white-space: nowrap;
+}
+
+.key-face::before, .key-face::after {
+    display: none;
+}
+
+.toolbar .hardware, .api.hardware {
+    height: 44px;
+    padding: 0px 15px;
+    border-radius: 24px;
+    font-size: 13px;
+}
+
+.toolbar .key-face {
+    width: 20px;
+    height: 20px;
+    font-size: 19px;
+}
+
+.flight-actions, .inspection-controls {
+    padding: 12px;
+    gap: 14px;
+}
+
+.flight-actions .hardware, .inspection-controls .hardware {
+    font-size: 12px;
+}
+
+.touch-controls {
+    padding: 10px;
+    gap: 9px;
+    grid-template-columns: repeat(3, 42px);
+    grid-template-rows: repeat(2, 42px);
+}
+
+.touch-controls button {
+    padding: 0px;
+    border-radius: 50%;
+    touch-action: none;
+}
+
+.catalog-panel {
+    top: 100px;
+    padding: 22px;
+}
+
+#model-list {
+    gap: 14px;
+}
+
+.entry {
+    display: block;
+    text-align: left;
+    padding: 14px;
+    border-radius: 18px;
+}
+
+.entry small {
+    margin-top: 5px;
+    color: var(--muted);
+}
+
+.exhibit {
+    padding: 7px 12px;
+    font-size: 12px;
+    box-shadow: rgba(191, 197, 204, 0.533) 3px 3px 8px, rgb(255, 255, 255) -3px -3px 8px;
+}
+
+.entry::before, .exhibit::before {
+    width: 8px;
+    height: 8px;
+    margin-right: 7px;
+    background: var(--exhibit-color);
+    box-shadow: none;
+    border-radius: 50%;
+}
+
+#category-filter, #upload-form input:not([type="hidden"]), #upload-form textarea {
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.44);
+    border-radius: 14px;
+    box-shadow: var(--inset);
+    padding: 12px;
+}
+
+#category-filter {
+    margin-bottom: 18px;
+}
+
+#upload-form .file-picker {
+    background: var(--surface);
+    border: 1px dashed rgb(184, 190, 198);
+    border-radius: 18px;
+}
+
+#upload-form input[type="file"] {
+    box-shadow: none;
+    border: 0px;
+    padding-inline: 0px;
+}
+
+#upload-file::file-selector-button {
+    font: inherit;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid white;
+    border-radius: 20px;
+    padding: 9px 14px;
+    margin: 5px 12px 8px 5px;
+    box-shadow: var(--raised);
+    cursor: pointer;
+}
+
+.upload-close {
+    padding: 5px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-size: 23px;
+}
+
+#upload-submit {
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: var(--surface);
+    color: rgb(136, 96, 43);
+    padding: 14px;
+}
+
+.download {
+    align-self: stretch;
+}
+
+dialog {
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.69);
+    border-radius: 26px;
+}
+
+.keyboard-guide {
+    gap: 18px;
+    padding: 12px 18px;
+    min-height: 44px;
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.44);
+    border-radius: 24px;
+    box-shadow: var(--raised);
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 20px;
+}
+
+.keyboard-guide > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.keyboard-guide > span + span {
+    border-left: 1px solid rgb(214, 218, 222);
+    padding-left: 18px;
+}
+
+kbd {
+    min-width: 22px;
+    padding: 1px 5px;
+    border: 0px;
+    border-radius: 6px;
+    background: var(--surface);
+    color: rgb(80, 89, 102);
+    font: 600 11px / 20px system-ui, sans-serif;
+    box-shadow: rgba(201, 205, 210, 0.5) 2px 2px 4px, rgba(255, 255, 255, 0.69) -2px -2px 4px;
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+    .keyboard-guide {
+        gap: 10px;
+        padding-inline: 12px;
+    }
+
+    .keyboard-guide > span + span {
+        padding-left: 10px;
+    }
+
+    .keyboard-guide #mouse-guide {
+        display: none;
+    }
+
+}
+
+:focus-visible {
+    outline: rgb(151, 115, 59) solid 2px;
+    outline-offset: 4px;
+}
+
+@media (max-width: 1100px) {
+    .top {
+        grid-template-columns: 1fr minmax(280px, 540px) 1fr;
+    }
+
+    .hardware {
+        padding: 10px 12px;
+    }
+
+}
+
+@media (max-width: 760px) {
+    .top {
+        grid-template-columns: auto 1fr;
+        gap: 8px;
+    }
+
+    .toolbar {
+        grid-column: 1 / -1;
+    }
+
+    .toolbar {
+        grid-template-columns: minmax(150px, 1fr) auto auto;
+        padding: 8px;
+        gap: 8px;
+    }
+
+    .toolbar .hardware {
+        padding: 0px 10px;
+    }
+
+    .menu .key-label {
+        display: none;
+    }
+
+    .search-form {
+        padding-inline: 9px;
+    }
+
+    .catalog-panel {
+        top: 120px;
+    }
+
+    .intro {
+        top: 136px;
+    }
+
+    .flight-actions, .inspection-controls {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .flight-actions .hardware, .inspection-controls .hardware {
+        font-size: 11px;
+        padding: 9px 11px;
+    }
+
+    .exhibit {
+        font-size: 11px;
+        padding: 5px 9px;
+    }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+    button, a {
+        transition: none !important;
+    }
+
+}
